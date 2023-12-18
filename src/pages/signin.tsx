@@ -8,10 +8,11 @@ import {
   ClientSafeProvider,
 } from "next-auth/react";
 import { NextPage } from "next";
-import { BuiltInProviderType } from "next-auth/providers";
 import { Session } from "next-auth";
 import { NavBar } from "~/components/NavBar";
 import { Button } from "@/components/ui/button";
+import { BuiltInProviderType } from "next-auth/providers/index";
+import { authOptions } from "~/server/auth";
 
 interface SignInProps {
   providers?: Record<
@@ -52,9 +53,9 @@ const SignIn: NextPage = ({ providers }: SignInProps) => {
 SignIn.getInitialProps = async (context): Promise<SignInProps> => {
   const { req, res } = context;
   const session = await getSession({ req });
-  console.log({ session });
+
   if (session && res) {
-    res.writeHead(302, { Location: "/notes" });
+    res.writeHead(302, { Location: "/" });
     res.end();
     return {
       session,
