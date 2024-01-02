@@ -10,6 +10,7 @@ import { api } from "~/utils/api";
 import { Track } from "~/types/track";
 import { PlayIcon } from "lucide-react";
 import { PauseIcon } from "@radix-ui/react-icons";
+import Image from "next/image";
 
 interface BlogProps {
   title: string;
@@ -28,7 +29,7 @@ export const BlogEntry: React.FC<BlogProps> = ({
   const spotify = useSpotify();
   const track = api.player.getTrack.useQuery({
     trackId: trackUri,
-    accessToken: spotify?.accessToken || "",
+    accessToken: spotify?.accessToken ?? "",
   });
   const trackName = track.data?.name;
   const artists = getArtistNames(track.data);
@@ -39,17 +40,23 @@ export const BlogEntry: React.FC<BlogProps> = ({
   const isPlaying = spotify?.playbackState?.is_playing;
   const isPlayingTrack =
     spotify?.playbackState?.item?.uri === `spotify:track:${trackUri}`;
-  console.log({ isPlayingTrack }, spotify?.playbackState);
 
   return (
     <Card className="ml-4 mr-4 w-auto sm:w-2/3">
       <CardHeader className="flex justify-between gap-3 lg:flex-row lg:gap-10">
         <div className="lg:flex lg:flex-row lg:gap-10">
-          <img className="h-21 sm:h-40" src={albumImage} />
+          {albumImage && (
+            <img
+              className="h-21 sm:h-40"
+              src={albumImage ?? ""}
+              alt={trackName ?? "trackName"}
+            />
+          )}
+
           <div className="mt-5 flex flex-col items-start gap-3">
             <div>
-              <CardTitle>{trackName || "Unknown track"}</CardTitle>
-              <CardDescription>{artists || "Unknown artist"}</CardDescription>
+              <CardTitle>{trackName ?? "Unknown track"}</CardTitle>
+              <CardDescription>{artists ?? "Unknown artist"}</CardDescription>
             </div>
             <div>
               <p>{content}</p>

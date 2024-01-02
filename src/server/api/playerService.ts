@@ -1,67 +1,56 @@
-import { access } from "fs";
+import axios, { AxiosInstance } from "axios";
+import { PlaybackDevice } from "~/components/Player";
+import { env } from "~/env.mjs";
+import { PlaybackState } from "~/types/playbackState";
+import { Track } from "~/types/track";
+
+const fetchSpotify = (accessToken: string): AxiosInstance => {
+  return axios.create({
+    baseURL: env.SPOTIFY_BASE_URL,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      "Content-Type": "application/json",
+    },
+  });
+};
 
 export const transferPlaybackDevice = async (
   deviceId: string,
   accessToken: string,
 ) => {
-  const response = await fetch("https://api.spotify.com/v1/me/player", {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-      "Content-Type": "application/json",
-    },
-    body: JSON.stringify({
+  const fetch = fetchSpotify(accessToken);
+  try {
+    await fetch.put("/me/player", {
       device_ids: [deviceId],
-    }),
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(`HTTP error! Status: ${response.status}`);
-      }
-      return "success";
-    })
-    .catch((error) => {
-      // Handle errors
-      console.error("Error:", error);
     });
-
-  return response;
+    return "success";
+  } catch (error) {
+    throw new Error("Error transferring playback");
+  }
 };
 
 export const getAvailableDevices = async (accessToken: string) => {
-  const response = await fetch("https://api.spotify.com/v1/me/player/devices", {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  })
-    .then((response) => response.json())
-    .catch((error) => {
-      console.log(error);
-    });
-
-  return response.devices;
+  const fetch = fetchSpotify(accessToken);
+  try {
+    const response = await fetch.get<{ devices: PlaybackDevice[] }>(
+      "/me/player/devices",
+    );
+    return response.data.devices;
+  } catch (error) {
+    throw new Error("Error fetching devices");
+  }
 };
 
 export const getPlaybackState = async (accessToken: string) => {
-  const url = "https://api.spotify.com/v1/me/player";
+  const fetch = fetchSpotify(accessToken);
+
   try {
-    const response = await fetch(url, {
-      method: "GET",
-      headers: {
-        Authorization: `Bearer ${accessToken}`,
-      },
-    });
+    const { data: playbackState } =
+      await fetch.get<PlaybackState>("/me/player");
 
-    if (!response.ok) {
-      throw new Error(`HTTP error! Status: ${response.status}`);
-    }
-
-    const data = await response.json();
-    console.log("Spotify data:", JSON.stringify(data));
-    return data;
-  } catch (error: any) {
-    console.error("Error fetching Spotify data:", error.message);
+    return playbackState;
+  } catch (error) {
+    console.error("Error fetching Spotify data:", error);
   }
 };
 
@@ -70,27 +59,39 @@ export const playTrackRequest = async (
   trackUri: string,
   deviceId: string,
 ) => {
-  const response = await fetch("https://api.spotify.com/v1/me/player/play", {
-    method: "PUT",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-    body: JSON.stringify({
+  const fetch = fetchSpotify(accessToken);
+
+  try {
+    await fetch.put("/me/player/play", {
       device_id: deviceId,
       uris: [trackUri],
-    }),
-  })
-    .then((response) => {
-      if (!response.ok) {
-        throw new Error(
-          `HTTP error! Status: ${response.status}, Body: ${response.body}`,
-        );
-      }
-      return "success";
-    })
-    .catch((error) => {
-      console.log(error);
     });
+    return "success";
+  } catch (error) {
+    console.error(error);
+    return "error";
+  }
+};
 
-  return response;
+export const pauseTrackRequest = async (accessToken: string) => {
+  const fetch = fetchSpotify(accessToken);
+
+  try {
+    await fetch.put("/me/player/pause");
+    return "success";
+  } catch (error) {
+    console.error(error);
+    return "error";
+  }
+};
+
+export const getTrack = async (accessToken: string, trackId: string) => {
+  const fetch = fetchSpotify(accessToken);
+
+  try {
+    const { data: track } = await fetch.get<Track>(`/tracks/${trackId}`);
+    return track;
+  } catch (error) {
+    console.error(error);
+  }
 };

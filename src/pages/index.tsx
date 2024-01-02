@@ -1,4 +1,4 @@
-import { NextPage } from "next";
+import type { NextPage } from "next";
 import React from "react";
 import { useSession } from "next-auth/react";
 import Head from "next/head";
@@ -32,15 +32,15 @@ const BLOGS = [
 
 const Home: NextPage = () => {
   const session = useSession();
-  const isAuth =
-    session.status === "authenticated" || session.status === "loading";
+  const isAuth = session.status === "authenticated";
+  const isAuthLoading = session.status === "loading";
 
   const router = useRouter();
   React.useEffect(() => {
-    if (!isAuth) {
-      router.push("/signin");
+    if (!isAuth && !isAuthLoading) {
+      void router.push("/signin");
     }
-  }, [session, router]);
+  }, [session, isAuthLoading, isAuth, router]);
 
   return (
     <>

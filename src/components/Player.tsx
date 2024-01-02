@@ -24,7 +24,8 @@ interface SpotifyContextPayload {
   setActiveIsLoading: boolean;
   play: (trackId: string) => void;
   pause: () => void;
-  refetchPlayback: () => void;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  refetchPlayback: () => Promise<any>;
   playbackState?: PlaybackState | null;
 }
 
@@ -39,7 +40,7 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
   const { data: token } = api.user.getAccessToken.useQuery();
 
   const { data: devices, refetch } = api.player.getDevices.useQuery(
-    { accessToken: token || "" },
+    { accessToken: token ?? "" },
     {
       enabled: !!token,
     },
@@ -47,7 +48,7 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
 
   const { data: playback, refetch: refetchPlayback } =
     api.player.getCurrentPlaybackState.useQuery({
-      accessToken: token || "",
+      accessToken: token ?? "",
     });
 
   const transferPlayback = api.player.transferPlayback.useMutation({
@@ -61,7 +62,7 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
   });
 
   const pause = () => {
-    pauseTrack.mutate({ accessToken: token || "" });
+    pauseTrack.mutate({ accessToken: token ?? "" });
   };
 
   const activeDevice: PlaybackDevice | undefined = devices?.find(
@@ -71,14 +72,14 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
   const play = (trackUrl: string) => {
     console.log("play");
     playTrack.mutate({
-      accessToken: token || "",
+      accessToken: token ?? "",
       trackUrl,
-      deviceId: activeDevice?.id || "",
+      deviceId: activeDevice?.id ?? "",
     });
   };
 
   const setActiveDevice = (deviceId: string) => {
-    transferPlayback.mutate({ accessToken: token || "", deviceId });
+    transferPlayback.mutate({ accessToken: token ?? "", deviceId });
   };
 
   return (

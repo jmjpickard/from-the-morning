@@ -27,7 +27,7 @@
     "@trpc/react-query": "^10.37.1",
     "@trpc/server": "^10.37.1",
     "@types/spotify-web-playback-sdk": "^0.1.19",
-    "axios": "^1.6.2",
+    "axios": "^1.6.3",
     "axios-retry": "^4.0.0",
     "class-variance-authority": "^0.7.0",
     "clsx": "^2.0.0",

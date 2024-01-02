@@ -10,6 +10,6 @@ export const userRouter = createTRPCRouter({
       throw new Error("No session found");
     }
     const token = await getAccessToken(account.refresh_token ?? "");
-    return token as string;
+    return token;
   }),
 });

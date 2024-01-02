@@ -1,9 +1,5 @@
 import { Button } from "@/components/ui/button";
 import Link from "next/link";
-import { DropdownFilter } from "./Dropdown";
-import { useSpotify } from "./Player";
-import { signOut } from "next-auth/react";
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { UserNav } from "./UserNav";
 
 export const NavBar: React.FC = () => {

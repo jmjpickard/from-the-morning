@@ -27,9 +27,9 @@ export const PlayBar: React.FC = () => {
             {albumPhoto && <img src={albumPhoto} />}
           </div>
           <div>
-            <p className="text-sm">{trackName || "Unknown track"}</p>
+            <p className="text-sm">{trackName ?? "Unknown track"}</p>
             <p className="text-xs text-gray-500">
-              {artist || "Unknown artist"}
+              {artist ?? "Unknown artist"}
             </p>
           </div>
         </div>
@@ -45,7 +45,7 @@ export const PlayBar: React.FC = () => {
           ) : (
             <Button
               variant="ghost"
-              onClick={() => spotify?.play(trackUri || "")}
+              onClick={() => spotify?.play(trackUri ?? "")}
               className="w-10 rounded-full px-1 py-1 text-white"
             >
               <PlayIcon className="" />

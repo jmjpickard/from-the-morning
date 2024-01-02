@@ -3,6 +3,7 @@ export interface PlaybackState {
   shuffle_state: boolean;
   repeat_state: string;
   timestamp: number;
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   context: any;
   progress_ms: number;
   item: Item;
