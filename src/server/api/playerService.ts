@@ -44,25 +44,30 @@ export const getAvailableDevices = async (accessToken: string) => {
 };
 
 export const getPlaybackState = async (accessToken: string) => {
-  const response = await fetch("https://api.spotify.com/v1/me/player", {
-    method: "GET",
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
-  })
-    .then((response) => {
-      response.json();
-    })
-    .catch((error) => {
-      console.log(error);
+  const url = "https://api.spotify.com/v1/me/player";
+  try {
+    const response = await fetch(url, {
+      method: "GET",
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
     });
 
-  return response;
+    if (!response.ok) {
+      throw new Error(`HTTP error! Status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log("Spotify data:", JSON.stringify(data));
+    return data;
+  } catch (error: any) {
+    console.error("Error fetching Spotify data:", error.message);
+  }
 };
 
 export const playTrackRequest = async (
   accessToken: string,
-  trackId: string,
+  trackUri: string,
   deviceId: string,
 ) => {
   const response = await fetch("https://api.spotify.com/v1/me/player/play", {
@@ -72,11 +77,10 @@ export const playTrackRequest = async (
     },
     body: JSON.stringify({
       device_id: deviceId,
-      context_uri: "spotify:track:47s4suMScnmNQ2Vu4e0blc",
+      uris: [trackUri],
     }),
   })
     .then((response) => {
-      console.log(response);
       if (!response.ok) {
         throw new Error(
           `HTTP error! Status: ${response.status}, Body: ${response.body}`,

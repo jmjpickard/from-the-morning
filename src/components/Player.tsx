@@ -1,4 +1,5 @@
 import React, { useContext } from "react";
+import { PlaybackState } from "~/types/playbackState";
 import { api } from "~/utils/api";
 
 interface Props {
@@ -14,6 +15,7 @@ export interface PlaybackDevice {
 }
 
 interface SpotifyContextPayload {
+  accessToken?: string;
   playerState?: string;
   currentTrack?: string;
   devices?: PlaybackDevice[];
@@ -22,6 +24,8 @@ interface SpotifyContextPayload {
   setActiveIsLoading: boolean;
   play: (trackId: string) => void;
   pause: () => void;
+  refetchPlayback: () => void;
+  playbackState?: PlaybackState | null;
 }
 
 const SpotifyContext = React.createContext<SpotifyContextPayload | undefined>(
@@ -41,36 +45,46 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
     },
   );
 
+  const { data: playback, refetch: refetchPlayback } =
+    api.player.getCurrentPlaybackState.useQuery({
+      accessToken: token || "",
+    });
+
   const transferPlayback = api.player.transferPlayback.useMutation({
     onSuccess: () => refetch(),
   });
-  const playTrack = api.player.playTrack.useMutation();
+  const playTrack = api.player.playTrack.useMutation({
+    onSuccess: () => refetchPlayback(),
+  });
+  const pauseTrack = api.player.pauseTrack.useMutation({
+    onSuccess: () => refetchPlayback(),
+  });
 
   const pause = () => {
-    console.log("pause");
+    pauseTrack.mutate({ accessToken: token || "" });
   };
 
   const activeDevice: PlaybackDevice | undefined = devices?.find(
     (d: PlaybackDevice) => d.is_active,
   );
 
-  const play = (trackId: string) => {
+  const play = (trackUrl: string) => {
     console.log("play");
     playTrack.mutate({
       accessToken: token || "",
-      trackId,
+      trackUrl,
       deviceId: activeDevice?.id || "",
     });
   };
 
   const setActiveDevice = (deviceId: string) => {
-    console.log({ deviceId });
     transferPlayback.mutate({ accessToken: token || "", deviceId });
   };
 
   return (
     <SpotifyContext.Provider
       value={{
+        accessToken: token,
         playerState,
         currentTrack,
         devices,
@@ -79,6 +93,8 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
         setActiveIsLoading: transferPlayback.isLoading,
         play,
         pause,
+        refetchPlayback,
+        playbackState: playback,
       }}
     >
       {children}

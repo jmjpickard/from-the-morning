@@ -1,19 +1,32 @@
-import { Button } from "@/components/ui/button";
 import { NextPage } from "next";
-import { signOut, useSession } from "next-auth/react";
+import React from "react";
+import { useSession } from "next-auth/react";
 import Head from "next/head";
 import { useRouter } from "next/router";
-
-import React from "react";
 import { BlogEntry } from "~/components/BlogEntry";
 import { NavBar } from "~/components/NavBar";
-import { useSpotify } from "~/components/Player";
+import { PlayBar } from "~/components/PlayBar";
 
 const BLOGS = [
   {
     title: "Nick Drake - From the morning",
     content: "From the morning, from the morning, from the morning",
-    trackId: "6meH4I9A4WZtD3z8hnQKqr",
+    trackUri: "6meH4I9A4WZtD3z8hnQKqr",
+  },
+  {
+    title: "Anohni & the johnsons",
+    content: "First track from the new album - one of the best of 2023",
+    trackUri: "0kN5FVdrkO1w7itaepBMwM",
+  },
+  {
+    title: "Holly Humberstone",
+    content: "A nice song",
+    trackUri: "1eTD6LXZ233IaiyI5fvtJa",
+  },
+  {
+    title: "Leif",
+    content: "Very nice chilled piano folk",
+    trackUri: "3gaH1EhTC53WZeFRj3hGtp",
   },
 ];
 
@@ -39,16 +52,16 @@ const Home: NextPage = () => {
       <main className="flex min-h-screen flex-col items-center bg-background font-mono text-foreground">
         <NavBar />
         {isAuth ? (
-          <>
+          <div className="mb-24 flex w-full flex-col items-center justify-center gap-4">
             {BLOGS.map((blog) => (
               <BlogEntry key={blog.title} {...blog} />
             ))}
-            <Button onClick={() => signOut()}>Sign out</Button>
-          </>
+          </div>
         ) : (
           <p>Redirecting...</p>
         )}
       </main>
+      <PlayBar />
     </>
   );
 };

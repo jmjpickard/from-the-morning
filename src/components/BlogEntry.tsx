@@ -1,28 +1,79 @@
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useSpotify } from "./Player";
 import { Button } from "@/components/ui/button";
+import { api } from "~/utils/api";
+import { Track } from "~/types/track";
+import { PlayIcon } from "lucide-react";
+import { PauseIcon } from "@radix-ui/react-icons";
 
 interface BlogProps {
   title: string;
   content: string;
-  trackId: string;
+  trackUri: string;
 }
 
+const getArtistNames = (track?: Track) => {
+  return track?.artists?.map((artist) => artist.name).join(", ");
+};
+
 export const BlogEntry: React.FC<BlogProps> = ({
-  title,
   content,
-  trackId,
+  trackUri,
 }: BlogProps) => {
   const spotify = useSpotify();
+  const track = api.player.getTrack.useQuery({
+    trackId: trackUri,
+    accessToken: spotify?.accessToken || "",
+  });
+  const trackName = track.data?.name;
+  const artists = getArtistNames(track.data);
+  const albumImage = track.data?.album?.images
+    ? track.data?.album.images[0]?.url
+    : "";
+
+  const isPlaying = spotify?.playbackState?.is_playing;
+  const isPlayingTrack =
+    spotify?.playbackState?.item?.uri === `spotify:track:${trackUri}`;
+  console.log({ isPlayingTrack }, spotify?.playbackState);
+
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle>{title}</CardTitle>
+    <Card className="ml-4 mr-4 w-auto sm:w-2/3">
+      <CardHeader className="flex justify-between gap-3 lg:flex-row lg:gap-10">
+        <div className="lg:flex lg:flex-row lg:gap-10">
+          <img className="h-21 sm:h-40" src={albumImage} />
+          <div className="mt-5 flex flex-col items-start gap-3">
+            <div>
+              <CardTitle>{trackName || "Unknown track"}</CardTitle>
+              <CardDescription>{artists || "Unknown artist"}</CardDescription>
+            </div>
+            <div>
+              <p>{content}</p>
+            </div>
+          </div>
+        </div>
+        {isPlaying && isPlayingTrack ? (
+          <Button
+            variant="ghost"
+            onClick={() => spotify?.pause()}
+            className="w-10 rounded-full px-1 py-1 text-primary"
+          >
+            <PauseIcon className="h-5 w-5" />
+          </Button>
+        ) : (
+          <Button
+            variant="ghost"
+            onClick={() => spotify?.play(`spotify:track:${trackUri}`)}
+            className="w-10 rounded-full px-1 py-1 text-primary"
+          >
+            <PlayIcon className="" />
+          </Button>
+        )}
       </CardHeader>
-      <CardContent>
-        <p>{content}</p>
-        <Button onClick={() => spotify?.play(trackId)}>Play</Button>
-      </CardContent>
     </Card>
   );
 };

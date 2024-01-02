@@ -3,19 +3,13 @@ import { CheckIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
-import {
-  Command,
-  CommandEmpty,
-  CommandGroup,
-  CommandInput,
-  CommandItem,
-} from "@/components/ui/command";
+import { Command, CommandGroup, CommandItem } from "@/components/ui/command";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { PlusCircledIcon } from "@radix-ui/react-icons";
+import { LaptopIcon } from "@radix-ui/react-icons";
 
 interface DropdownFilterProps {
   options?: {
@@ -32,26 +26,24 @@ export const DropdownFilter: React.FC<DropdownFilterProps> = ({
   setValue,
 }) => {
   const [open, setOpen] = React.useState(false);
-  console.log({ options, value, setValue });
   return (
     <Popover open={open} onOpenChange={setOpen}>
       <PopoverTrigger asChild>
         <Button
-          variant="outline"
+          variant={value === "None" ? "destructive" : "secondary"}
           role="combobox"
           aria-expanded={open}
           size="sm"
           className="h-8 border-dashed"
         >
-          <PlusCircledIcon className="mr-2 h-4 w-4" />
-          Device
-          <span className="ml-2 flex flex-row font-mono text-xs">{value}</span>
+          <LaptopIcon className="h-4 w-4 lg:mr-2" />
+          <span className="ml-2 flex hidden flex-row font-mono text-xs lg:block">
+            {value}
+          </span>
         </Button>
       </PopoverTrigger>
       <PopoverContent className="w-[200px] p-0">
         <Command>
-          <CommandInput placeholder="Search..." />
-          <CommandEmpty>None found.</CommandEmpty>
           <CommandGroup>
             {options?.map((option) => (
               <CommandItem
