@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef, useCallback } from "react";
+import { useEffect, useState, useRef } from "react";
 
 interface UseSpotifyWebPlaybackProps {
   accessToken: string | undefined;
@@ -139,6 +139,9 @@ export const useSpotifyWebPlayback = ({
         console.error("The Web Playback SDK could not connect to Spotify");
         setError("Could not connect to Spotify");
       }
+    }).catch((err: unknown) => {
+      console.error("Error connecting to Spotify:", err);
+      setError("Error connecting to Spotify");
     });
 
     playerRef.current = spotifyPlayer;

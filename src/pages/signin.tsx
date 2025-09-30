@@ -4,15 +4,13 @@ import {
   getProviders,
   signIn,
   getCsrfToken,
-  LiteralUnion,
-  ClientSafeProvider,
 } from "next-auth/react";
-import { NextPage } from "next";
-import { Session } from "next-auth";
+import type { LiteralUnion, ClientSafeProvider } from "next-auth/react";
+import type { NextPage } from "next";
+import type { Session } from "next-auth";
 import { NavBar } from "~/components/NavBar";
 import { Button } from "@/components/ui/button";
-import { BuiltInProviderType } from "next-auth/providers/index";
-import { authOptions } from "~/server/auth";
+import type { BuiltInProviderType } from "next-auth/providers/index";
 
 interface SignInProps {
   providers?: Record<

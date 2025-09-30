@@ -1,4 +1,4 @@
-import React, { useContext, useEffect } from "react";
+import React, { useCallback, useContext, useEffect } from "react";
 import type { PlaybackState } from "~/types/playbackState";
 import { api } from "~/utils/api";
 import { useSpotifyWebPlayback } from "~/hooks/useSpotifyWebPlayback";
@@ -66,12 +66,12 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
       onPlayerReady: (deviceId) => {
         console.log("Web Playback SDK ready with device ID:", deviceId);
         // Refetch devices to include the new web player
-        refetch();
+        void refetch();
       },
       onPlayerStateChanged: (state) => {
         if (state) {
           // Refetch playback state when web player state changes
-          refetchPlayback();
+          void refetchPlayback();
         }
       },
     });
@@ -95,29 +95,45 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
     );
 
   const transferPlayback = api.player.transferPlayback.useMutation({
-    onSuccess: () => refetch(),
+    onSuccess: () => {
+      void refetch();
+    },
   });
   const playTrack = api.player.playTrack.useMutation({
-    onSuccess: () => refetchPlayback(),
+    onSuccess: () => {
+      void refetchPlayback();
+    },
   });
   const pauseTrack = api.player.pauseTrack.useMutation({
-    onSuccess: () => refetchPlayback(),
+    onSuccess: () => {
+      void refetchPlayback();
+    },
   });
   const skipNextMutation = api.player.skipNext.useMutation({
-    onSuccess: () => refetchPlayback(),
+    onSuccess: () => {
+      void refetchPlayback();
+    },
   });
   const skipPreviousMutation = api.player.skipPrevious.useMutation({
-    onSuccess: () => refetchPlayback(),
+    onSuccess: () => {
+      void refetchPlayback();
+    },
   });
   const seekMutation = api.player.seek.useMutation({
-    onSuccess: () => refetchPlayback(),
+    onSuccess: () => {
+      void refetchPlayback();
+    },
   });
   const setVolumeMutation = api.player.setVolume.useMutation();
   const toggleShuffleMutation = api.player.toggleShuffle.useMutation({
-    onSuccess: () => refetchPlayback(),
+    onSuccess: () => {
+      void refetchPlayback();
+    },
   });
   const setRepeatMutation = api.player.setRepeat.useMutation({
-    onSuccess: () => refetchPlayback(),
+    onSuccess: () => {
+      void refetchPlayback();
+    },
   });
   const addToQueueMutation = api.player.addToQueue.useMutation();
 
@@ -165,13 +181,13 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
     }
   };
 
-  const next = () => {
+  const next = useCallback(() => {
     if (queueIndex === null) return;
     const nextIndex = queueIndex + 1;
     if (nextIndex < queueUris.length) {
       playFromQueue(nextIndex);
     }
-  };
+  }, [queueIndex, queueUris.length, playFromQueue]);
 
   const prev = () => {
     if (queueIndex === null) return;
@@ -245,7 +261,7 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
       );
       setActiveDevice(webPlaybackDeviceId);
     }
-  }, [webPlayerReady, webPlaybackDeviceId, activeDevice, devices]);
+  }, [webPlayerReady, webPlaybackDeviceId, activeDevice, devices, setActiveDevice]);
 
   React.useEffect(() => {
     const currentUri = playback?.item?.uri;
