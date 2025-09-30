@@ -6,34 +6,18 @@ import { useRouter } from "next/router";
 import { BlogEntry } from "~/components/BlogEntry";
 import { NavBar } from "~/components/NavBar";
 import { PlayBar } from "~/components/PlayBar";
+import { api } from "~/utils/api";
+import { useSpotify } from "~/components/Player";
+import type { Post } from "@prisma/client";
 
-const BLOGS = [
-  {
-    title: "Nick Drake - From the morning",
-    content: "From the morning, from the morning, from the morning",
-    trackUri: "6meH4I9A4WZtD3z8hnQKqr",
-  },
-  {
-    title: "Anohni & the johnsons",
-    content: "First track from the new album - one of the best of 2023",
-    trackUri: "0kN5FVdrkO1w7itaepBMwM",
-  },
-  {
-    title: "Holly Humberstone",
-    content: "A nice song",
-    trackUri: "1eTD6LXZ233IaiyI5fvtJa",
-  },
-  {
-    title: "Leif",
-    content: "Very nice chilled piano folk",
-    trackUri: "3gaH1EhTC53WZeFRj3hGtp",
-  },
-];
+// Feed now comes from backend
 
 const Home: NextPage = () => {
   const session = useSession();
   const isAuth = session.status === "authenticated";
   const isAuthLoading = session.status === "loading";
+  const spotify = useSpotify();
+  const feed = api.post.getFeed.useQuery(undefined, { enabled: isAuth });
 
   const router = useRouter();
   React.useEffect(() => {
@@ -41,6 +25,15 @@ const Home: NextPage = () => {
       void router.push("/signin");
     }
   }, [session, isAuthLoading, isAuth, router]);
+
+  React.useEffect(() => {
+    const posts = (feed.data ?? []) as (Post & { createdBy: unknown })[];
+    if (posts.length) {
+      const uris = posts.map((p) => `spotify:track:${p.trackId}`);
+      spotify?.setQueue(uris, 0);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [feed.data?.length]);
 
   return (
     <>
@@ -53,8 +46,13 @@ const Home: NextPage = () => {
         <NavBar />
         {isAuth ? (
           <div className="mb-24 flex w-full flex-col items-center justify-center gap-4">
-            {BLOGS.map((blog) => (
-              <BlogEntry key={blog.title} {...blog} />
+            {(feed.data as (Post & { createdBy: unknown })[] | undefined)?.map((post, idx) => (
+              <BlogEntry
+                key={post.id}
+                content={post.content ?? ""}
+                trackId={post.trackId}
+                index={idx}
+              />
             ))}
           </div>
         ) : (
