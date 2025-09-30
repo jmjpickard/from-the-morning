@@ -1,5 +1,6 @@
 import { useSession } from "next-auth/react";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
+import Link from "next/link";
 import { api } from "~/utils/api";
 import type { PlaybackDevice } from "~/components/Player";
 
@@ -11,12 +12,29 @@ interface DiagnosticCheck {
   timestamp: string;
 }
 
+interface AccountData {
+  success?: boolean;
+  error?: string;
+  account?: {
+    provider?: string;
+    has_refresh_token?: boolean;
+    expires_at_readable?: string;
+    is_expired?: boolean;
+  };
+  scopes?: string[];
+  requiredScopes?: string[];
+}
+
+interface SpotifyAPIResponse {
+  logs?: string[];
+  error?: string;
+}
+
 export default function DiagnosticsPage() {
   const { data: session, status: sessionStatus } = useSession();
   const [checks, setChecks] = useState<DiagnosticCheck[]>([]);
   const [isRunning, setIsRunning] = useState(false);
   const [autoRefresh, setAutoRefresh] = useState(false);
-  const [accountData, setAccountData] = useState<any>(null);
   const [spotifyLogs, setSpotifyLogs] = useState<string[]>([]);
 
   // API queries
@@ -45,15 +63,14 @@ export default function DiagnosticsPage() {
       }
     );
 
-  const addCheck = (check: Omit<DiagnosticCheck, "timestamp">) => {
+  const addCheck = useCallback((check: Omit<DiagnosticCheck, "timestamp">) => {
     setChecks((prev: DiagnosticCheck[]) => [...prev, { ...check, timestamp: new Date().toLocaleTimeString() }]);
-  };
+  }, []);
 
-  const checkAccount = async () => {
+  const checkAccount = async (): Promise<AccountData | null> => {
     try {
       const response = await fetch("/api/debug/check-account");
-      const data = await response.json();
-      setAccountData(data);
+      const data = await response.json() as AccountData;
       return data;
     } catch (error) {
       console.error("Error checking account:", error);
@@ -65,18 +82,18 @@ export default function DiagnosticsPage() {
     setSpotifyLogs(["Running test..."]);
     try {
       const response = await fetch("/api/debug/test-spotify");
-      const data = await response.json();
+      const data = await response.json() as SpotifyAPIResponse;
       if (data.logs) {
         setSpotifyLogs(data.logs);
       } else {
-        setSpotifyLogs([`Error: ${data.error || "Unknown error"}`]);
+        setSpotifyLogs([`Error: ${data.error ?? "Unknown error"}`]);
       }
     } catch (error) {
       setSpotifyLogs([`Request failed: ${error instanceof Error ? error.message : "Unknown error"}`]);
     }
   };
 
-  const runDiagnostics = async () => {
+  const runDiagnostics = useCallback(async () => {
     setIsRunning(true);
     setChecks([]);
 
@@ -85,7 +102,7 @@ export default function DiagnosticsPage() {
       name: "NextAuth Session",
       status: sessionStatus === "authenticated" ? "success" : "error",
       message: sessionStatus === "authenticated" 
-        ? `Authenticated as ${session?.user?.email || "Unknown"}` 
+        ? `Authenticated as ${session?.user?.email ?? "Unknown"}` 
         : `Session status: ${sessionStatus}`,
       details: session ? JSON.stringify(session.user, null, 2) : undefined
     });
@@ -97,24 +114,24 @@ export default function DiagnosticsPage() {
 
     // Check 2: Database Account
     const accountInfo = await checkAccount();
-    if (accountInfo && accountInfo.success) {
-      const missingScopes = accountInfo.requiredScopes.filter(
-        (scope: string) => !accountInfo.scopes.includes(scope)
+    if (accountInfo?.success) {
+      const missingScopes = (accountInfo.requiredScopes ?? []).filter(
+        (scope: string) => !(accountInfo.scopes ?? []).includes(scope)
       );
       
       addCheck({
         name: "Database Account Record",
-        status: accountInfo.account.has_refresh_token ? "success" : "error",
-        message: accountInfo.account.has_refresh_token 
+        status: accountInfo.account?.has_refresh_token ? "success" : "error",
+        message: accountInfo.account?.has_refresh_token 
           ? "Account found with refresh token" 
           : "Account missing refresh token",
         details: JSON.stringify({
-          provider: accountInfo.account.provider,
-          has_refresh_token: accountInfo.account.has_refresh_token,
+          provider: accountInfo.account?.provider,
+          has_refresh_token: accountInfo.account?.has_refresh_token,
           scopes: accountInfo.scopes,
           missing_scopes: missingScopes,
-          token_expires: accountInfo.account.expires_at_readable,
-          is_expired: accountInfo.account.is_expired
+          token_expires: accountInfo.account?.expires_at_readable,
+          is_expired: accountInfo.account?.is_expired
         }, null, 2)
       });
 
@@ -131,7 +148,7 @@ export default function DiagnosticsPage() {
         name: "Database Account Record",
         status: "error",
         message: "Could not fetch account data",
-        details: accountInfo?.error || "Unknown error"
+        details: accountInfo?.error ?? "Unknown error"
       });
     }
 
@@ -238,7 +255,7 @@ export default function DiagnosticsPage() {
           track: playback.item?.name,
           artist: playback.item?.artists?.[0]?.name,
           device: playback.device?.name,
-          progress: `${Math.floor((playback.progress_ms || 0) / 1000)}s / ${Math.floor((playback.item?.duration_ms || 0) / 1000)}s`
+          progress: `${Math.floor((playback.progress_ms ?? 0) / 1000)}s / ${Math.floor((playback.item?.duration_ms ?? 0) / 1000)}s`
         }, null, 2)
       });
     } else {
@@ -276,13 +293,13 @@ export default function DiagnosticsPage() {
     });
 
     setIsRunning(false);
-  };
+  }, [sessionStatus, session, tokenLoading, tokenError, token, devicesLoading, devicesError, devices, playbackLoading, playbackError, playback, addCheck]);
 
   useEffect(() => {
     if (sessionStatus === "authenticated") {
       void runDiagnostics();
     }
-  }, [sessionStatus]);
+  }, [sessionStatus, runDiagnostics]);
 
   const getStatusColor = (status: DiagnosticCheck["status"]) => {
     switch (status) {
@@ -315,9 +332,9 @@ export default function DiagnosticsPage() {
       <div className="min-h-screen flex items-center justify-center bg-gray-50">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Please Sign In</h1>
-          <a href="/signin" className="text-blue-600 hover:underline">
+          <Link href="/signin" className="text-blue-600 hover:underline">
             Go to Sign In
-          </a>
+          </Link>
         </div>
       </div>
     );
@@ -380,19 +397,19 @@ export default function DiagnosticsPage() {
             <div>
               <div className="text-sm text-gray-600">Devices</div>
               <div className="font-semibold">
-                {devicesLoading ? "Loading..." : `${devices?.length || 0} found`}
+                {devicesLoading ? "Loading..." : `${devices?.length ?? 0} found`}
               </div>
             </div>
             <div>
               <div className="text-sm text-gray-600">Active Device</div>
               <div className="font-semibold">
-                {devices?.find((d: PlaybackDevice) => d.is_active)?.name || "None"}
+                {devices?.find((d: PlaybackDevice) => d.is_active)?.name ?? "None"}
               </div>
             </div>
           </div>
 
           {/* Current Track Info */}
-          {playback && playback.item && (
+          {playback?.item && (
             <div className="p-4 bg-green-50 border border-green-200 rounded mb-6">
               <div className="font-semibold mb-2">🎵 Currently Playing:</div>
               <div className="text-lg">{playback.item.name}</div>
@@ -439,7 +456,7 @@ export default function DiagnosticsPage() {
 
         {checks.length === 0 && !isRunning && (
           <div className="text-center text-gray-500 py-8">
-            Click "Run Diagnostics" to start checking your Spotify connection
+            Click &quot;Run Diagnostics&quot; to start checking your Spotify connection
           </div>
         )}
 
@@ -454,7 +471,7 @@ export default function DiagnosticsPage() {
             </div>
             <button
               onClick={() => {
-                navigator.clipboard.writeText(spotifyLogs.join("\n"));
+                void navigator.clipboard.writeText(spotifyLogs.join("\n"));
                 alert("Logs copied to clipboard!");
               }}
               className="mt-4 px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded text-sm"
@@ -486,10 +503,10 @@ export default function DiagnosticsPage() {
             </button>
             <button
               onClick={() => {
-                navigator.clipboard.writeText(JSON.stringify({
+                void navigator.clipboard.writeText(JSON.stringify({
                   token: token ? "present" : "missing",
-                  devices: devices?.length || 0,
-                  activeDevice: devices?.find((d: PlaybackDevice) => d.is_active)?.name || "none",
+                  devices: devices?.length ?? 0,
+                  activeDevice: devices?.find((d: PlaybackDevice) => d.is_active)?.name ?? "none",
                   playback: playback ? "active" : "none",
                   checks: checks
                 }, null, 2));
