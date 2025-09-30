@@ -1,6 +1,5 @@
 import { Button } from "@/components/ui/button";
 import { useSpotify } from "./Player";
-import { DropdownFilter } from "./Dropdown";
 import { DeviceSelectionDialog } from "./DeviceSelectionDialog";
 import {
   PauseIcon,
@@ -14,6 +13,7 @@ import {
   AlertCircleIcon,
 } from "lucide-react";
 import React from "react";
+import Image from "next/image";
 
 export const PlayBar: React.FC = () => {
   const spotify = useSpotify();
@@ -21,10 +21,6 @@ export const PlayBar: React.FC = () => {
   const [isDragging, setIsDragging] = React.useState(false);
   const [showDeviceDialog, setShowDeviceDialog] = React.useState(false);
 
-  const deviceOpts = spotify?.devices?.map((d) => ({
-    value: d.id,
-    label: d.name,
-  }));
   const active = spotify?.activeDevice?.name ?? "None";
   const albumPhoto = spotify?.playbackState?.item?.album?.images[0]?.url;
   const trackName = spotify?.playbackState?.item?.name;
@@ -45,10 +41,6 @@ export const PlayBar: React.FC = () => {
       setVolumeState(deviceVolume);
     }
   }, [spotify?.activeDevice?.volume_percent, isDragging]);
-
-  const handleDropdownSelect = (value: string) => {
-    spotify?.setActiveDevice(value);
-  };
 
   const handleVolumeChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const newVolume = parseInt(e.target.value);
@@ -149,8 +141,16 @@ export const PlayBar: React.FC = () => {
         <div className="flex items-center justify-between">
           {/* Track info */}
           <div className="flex items-center space-x-4">
-            <div className="h-12 w-12 bg-gray-600">
-              {albumPhoto && <img src={albumPhoto} alt={trackName} />}
+            <div className="relative h-12 w-12 bg-gray-600">
+              {albumPhoto && (
+                <Image
+                  src={albumPhoto}
+                  alt={trackName ?? "Album cover"}
+                  fill
+                  sizes="48px"
+                  className="object-cover"
+                />
+              )}
             </div>
             <div>
               <p className="text-sm">{trackName ?? "Unknown track"}</p>

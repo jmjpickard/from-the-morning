@@ -1,8 +1,13 @@
-import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { useSpotify } from "./Player";
 import { Button } from "@/components/ui/button";
 import { api } from "~/utils/api";
-import { Track } from "~/types/track";
+import type { Track } from "~/types/track";
 import { PlayIcon, AlertCircleIcon } from "lucide-react";
 import { PauseIcon } from "@radix-ui/react-icons";
 import Image from "next/image";
@@ -68,10 +73,12 @@ export const BlogEntry: React.FC<BlogProps> = ({ content, trackId, index }: Blog
         <CardHeader className="flex justify-between gap-3 lg:flex-row lg:gap-10">
           <div className="lg:flex lg:flex-row lg:gap-10">
             {albumImage && (
-              <img
+              <Image
                 className="h-21 sm:h-40"
-                src={albumImage ?? ""}
-                alt={trackName ?? "trackName"}
+                src={albumImage}
+                alt={trackName ?? "Album cover"}
+                width={160}
+                height={160}
               />
             )}
 

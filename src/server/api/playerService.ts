@@ -1,8 +1,8 @@
-import axios, { AxiosInstance } from "axios";
-import { PlaybackDevice } from "~/components/Player";
+import axios, { type AxiosInstance } from "axios";
+import type { PlaybackDevice } from "~/components/Player";
 import { env } from "~/env.mjs";
-import { PlaybackState } from "~/types/playbackState";
-import { Track } from "~/types/track";
+import type { PlaybackState } from "~/types/playbackState";
+import type { Track } from "~/types/track";
 
 const fetchSpotify = (accessToken: string): AxiosInstance => {
   return axios.create({
@@ -224,7 +224,7 @@ export const addToQueue = async (
 
 export const getRecentlyPlayed = async (
   accessToken: string,
-  limit: number = 20,
+  limit = 20,
 ) => {
   const fetch = fetchSpotify(accessToken);
 
@@ -232,6 +232,7 @@ export const getRecentlyPlayed = async (
     const response = await fetch.get("/me/player/recently-played", {
       params: { limit: Math.min(50, limit) },
     });
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return response.data;
   } catch (error) {
     console.error("Error fetching recently played:", error);
@@ -243,6 +244,7 @@ export const getUserQueue = async (accessToken: string) => {
 
   try {
     const response = await fetch.get("/me/player/queue");
+    // eslint-disable-next-line @typescript-eslint/no-unsafe-return
     return response.data;
   } catch (error) {
     console.error("Error fetching user queue:", error);

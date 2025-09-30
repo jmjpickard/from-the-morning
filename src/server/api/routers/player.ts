@@ -17,8 +17,6 @@ import {
   getRecentlyPlayed,
   getUserQueue,
 } from "../playerService";
-import { Track } from "~/types/track";
-import { PlaybackState } from "~/types/playbackState";
 
 export const playerRouter = createTRPCRouter({
   transferPlayback: protectedProcedure
@@ -186,16 +184,20 @@ export const playerRouter = createTRPCRouter({
       }),
     )
     .query(async ({ input }) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const recentlyPlayed = await getRecentlyPlayed(
         input.accessToken,
         input.limit,
       );
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return recentlyPlayed;
     }),
   getUserQueue: protectedProcedure
     .input(z.object({ accessToken: z.string() }))
     .query(async ({ input }) => {
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-assignment
       const queue = await getUserQueue(input.accessToken);
+      // eslint-disable-next-line @typescript-eslint/no-unsafe-return
       return queue;
     }),
 });

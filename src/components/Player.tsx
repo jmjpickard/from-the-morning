@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { PlaybackState } from "~/types/playbackState";
+import type { PlaybackState } from "~/types/playbackState";
 import { api } from "~/utils/api";
 
 interface Props {
@@ -52,8 +52,6 @@ const SpotifyContext = React.createContext<SpotifyContextPayload | undefined>(
 );
 
 export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
-  const [playerState, setPlayerState] = React.useState<string | undefined>();
-  const [currentTrack, setCurrentTrack] = React.useState<string | undefined>();
   const [queueUris, setQueueUris] = React.useState<string[]>([]);
   const [queueIndex, setQueueIndex] = React.useState<number | null>(null);
   const lastAdvancedFromTrackUri = React.useRef<string | null>(null);
@@ -246,14 +244,14 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
       // Allow future auto-advance for this track
       // Intentionally no-op besides the check; the guard will be compared again at end-of-track
     }
-  }, [playback?.item?.uri, playback?.progress_ms, playback?.is_playing, queueIndex, queueUris]);
+  }, [playback?.item?.uri, playback?.item?.duration_ms, playback?.progress_ms, playback?.is_playing, queueIndex, queueUris, next]);
 
   return (
     <SpotifyContext.Provider
       value={{
         accessToken: token,
-        playerState,
-        currentTrack,
+        playerState: undefined,
+        currentTrack: undefined,
         devices,
         activeDevice,
         setActiveDevice,

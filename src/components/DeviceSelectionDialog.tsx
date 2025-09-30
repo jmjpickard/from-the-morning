@@ -8,7 +8,7 @@ import {
 } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { LaptopIcon, SmartphoneIcon, SpeakerIcon } from "lucide-react";
-import { PlaybackDevice } from "./Player";
+import type { PlaybackDevice } from "./Player";
 
 interface DeviceSelectionDialogProps {
   open: boolean;
