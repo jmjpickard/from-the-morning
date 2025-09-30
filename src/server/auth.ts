@@ -54,7 +54,7 @@ export const authOptions: NextAuthOptions = {
       authorization: {
         params: {
           scope:
-            "user-read-email user-modify-playback-state user-read-playback-state",
+            "user-read-email user-modify-playback-state user-read-playback-state user-read-currently-playing user-read-recently-played streaming",
         },
       },
     }),

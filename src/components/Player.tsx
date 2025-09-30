@@ -34,6 +34,14 @@ interface SpotifyContextPayload {
   playFromQueue: (index: number) => void;
   next: () => void;
   prev: () => void;
+  // Native Spotify controls
+  skipNext: () => void;
+  skipPrevious: () => void;
+  seek: (positionMs: number) => void;
+  setVolume: (volumePercent: number) => void;
+  toggleShuffle: (state: boolean) => void;
+  setRepeat: (state: "track" | "context" | "off") => void;
+  addToQueue: (uri: string) => void;
 }
 
 const SpotifyContext = React.createContext<SpotifyContextPayload | undefined>(
@@ -76,6 +84,23 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
   const pauseTrack = api.player.pauseTrack.useMutation({
     onSuccess: () => refetchPlayback(),
   });
+  const skipNextMutation = api.player.skipNext.useMutation({
+    onSuccess: () => refetchPlayback(),
+  });
+  const skipPreviousMutation = api.player.skipPrevious.useMutation({
+    onSuccess: () => refetchPlayback(),
+  });
+  const seekMutation = api.player.seek.useMutation({
+    onSuccess: () => refetchPlayback(),
+  });
+  const setVolumeMutation = api.player.setVolume.useMutation();
+  const toggleShuffleMutation = api.player.toggleShuffle.useMutation({
+    onSuccess: () => refetchPlayback(),
+  });
+  const setRepeatMutation = api.player.setRepeat.useMutation({
+    onSuccess: () => refetchPlayback(),
+  });
+  const addToQueueMutation = api.player.addToQueue.useMutation();
 
   const pause = () => {
     pauseTrack.mutate({ accessToken: token ?? "" });
@@ -129,6 +154,61 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
     }
   };
 
+  // Native Spotify controls
+  const skipNext = () => {
+    skipNextMutation.mutate({
+      accessToken: token ?? "",
+      deviceId: activeDevice?.id,
+    });
+  };
+
+  const skipPrevious = () => {
+    skipPreviousMutation.mutate({
+      accessToken: token ?? "",
+      deviceId: activeDevice?.id,
+    });
+  };
+
+  const seek = (positionMs: number) => {
+    seekMutation.mutate({
+      accessToken: token ?? "",
+      positionMs,
+      deviceId: activeDevice?.id,
+    });
+  };
+
+  const setVolume = (volumePercent: number) => {
+    setVolumeMutation.mutate({
+      accessToken: token ?? "",
+      volumePercent,
+      deviceId: activeDevice?.id,
+    });
+  };
+
+  const toggleShuffleControl = (state: boolean) => {
+    toggleShuffleMutation.mutate({
+      accessToken: token ?? "",
+      state,
+      deviceId: activeDevice?.id,
+    });
+  };
+
+  const setRepeatControl = (state: "track" | "context" | "off") => {
+    setRepeatMutation.mutate({
+      accessToken: token ?? "",
+      state,
+      deviceId: activeDevice?.id,
+    });
+  };
+
+  const addToQueueControl = (uri: string) => {
+    addToQueueMutation.mutate({
+      accessToken: token ?? "",
+      uri,
+      deviceId: activeDevice?.id,
+    });
+  };
+
   React.useEffect(() => {
     const currentUri = playback?.item?.uri;
     const durationMs = playback?.item?.duration_ms ?? 0;
@@ -177,6 +257,13 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
         playFromQueue,
         next,
         prev,
+        skipNext,
+        skipPrevious,
+        seek,
+        setVolume,
+        toggleShuffle: toggleShuffleControl,
+        setRepeat: setRepeatControl,
+        addToQueue: addToQueueControl,
       }}
     >
       {children}

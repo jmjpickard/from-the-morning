@@ -7,6 +7,15 @@ import {
   pauseTrackRequest,
   playTrackRequest,
   transferPlaybackDevice,
+  skipToNextTrack,
+  skipToPreviousTrack,
+  seekToPosition,
+  setPlaybackVolume,
+  toggleShuffle,
+  setRepeatMode,
+  addToQueue,
+  getRecentlyPlayed,
+  getUserQueue,
 } from "../playerService";
 import { Track } from "~/types/track";
 import { PlaybackState } from "~/types/playbackState";
@@ -63,5 +72,130 @@ export const playerRouter = createTRPCRouter({
     .query(async ({ input }) => {
       const track = await getTrack(input.accessToken, input.trackId);
       return track;
+    }),
+  skipNext: protectedProcedure
+    .input(
+      z.object({
+        accessToken: z.string(),
+        deviceId: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const response = await skipToNextTrack(input.accessToken, input.deviceId);
+      return response;
+    }),
+  skipPrevious: protectedProcedure
+    .input(
+      z.object({
+        accessToken: z.string(),
+        deviceId: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const response = await skipToPreviousTrack(
+        input.accessToken,
+        input.deviceId,
+      );
+      return response;
+    }),
+  seek: protectedProcedure
+    .input(
+      z.object({
+        accessToken: z.string(),
+        positionMs: z.number(),
+        deviceId: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const response = await seekToPosition(
+        input.accessToken,
+        input.positionMs,
+        input.deviceId,
+      );
+      return response;
+    }),
+  setVolume: protectedProcedure
+    .input(
+      z.object({
+        accessToken: z.string(),
+        volumePercent: z.number().min(0).max(100),
+        deviceId: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const response = await setPlaybackVolume(
+        input.accessToken,
+        input.volumePercent,
+        input.deviceId,
+      );
+      return response;
+    }),
+  toggleShuffle: protectedProcedure
+    .input(
+      z.object({
+        accessToken: z.string(),
+        state: z.boolean(),
+        deviceId: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const response = await toggleShuffle(
+        input.accessToken,
+        input.state,
+        input.deviceId,
+      );
+      return response;
+    }),
+  setRepeat: protectedProcedure
+    .input(
+      z.object({
+        accessToken: z.string(),
+        state: z.enum(["track", "context", "off"]),
+        deviceId: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const response = await setRepeatMode(
+        input.accessToken,
+        input.state,
+        input.deviceId,
+      );
+      return response;
+    }),
+  addToQueue: protectedProcedure
+    .input(
+      z.object({
+        accessToken: z.string(),
+        uri: z.string(),
+        deviceId: z.string().optional(),
+      }),
+    )
+    .mutation(async ({ input }) => {
+      const response = await addToQueue(
+        input.accessToken,
+        input.uri,
+        input.deviceId,
+      );
+      return response;
+    }),
+  getRecentlyPlayed: protectedProcedure
+    .input(
+      z.object({
+        accessToken: z.string(),
+        limit: z.number().min(1).max(50).optional().default(20),
+      }),
+    )
+    .query(async ({ input }) => {
+      const recentlyPlayed = await getRecentlyPlayed(
+        input.accessToken,
+        input.limit,
+      );
+      return recentlyPlayed;
+    }),
+  getUserQueue: protectedProcedure
+    .input(z.object({ accessToken: z.string() }))
+    .query(async ({ input }) => {
+      const queue = await getUserQueue(input.accessToken);
+      return queue;
     }),
 });
