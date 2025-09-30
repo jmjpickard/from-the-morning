@@ -29,13 +29,16 @@ const NewPostPage: NextPage = () => {
     }
   }, [isAuth, isAuthLoading, router]);
 
-  const extractTrackId = (input: string) => {
+  const extractTrackId = (input: string): string => {
     // Accept raw track id or full Spotify URL
     try {
       const url = new URL(input);
       const parts = url.pathname.split("/");
       const idx = parts.findIndex((p) => p === "track");
-      if (idx !== -1 && parts[idx + 1]) return parts[idx + 1];
+      if (idx !== -1) {
+        const maybeId = parts[idx + 1];
+        if (maybeId) return maybeId;
+      }
       // Also support Spotify URI
       if (input.startsWith("spotify:track:")) return input.replace("spotify:track:", "");
     } catch (e) {
