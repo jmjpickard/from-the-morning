@@ -1,6 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { useSpotify } from "./Player";
 import { DropdownFilter } from "./Dropdown";
+import { DeviceSelectionDialog } from "./DeviceSelectionDialog";
 import {
   PauseIcon,
   PlayIcon,
@@ -10,6 +11,7 @@ import {
   ShuffleIcon,
   RepeatIcon,
   Repeat1Icon,
+  AlertCircleIcon,
 } from "lucide-react";
 import React from "react";
 
@@ -17,6 +19,7 @@ export const PlayBar: React.FC = () => {
   const spotify = useSpotify();
   const [volume, setVolumeState] = React.useState(50);
   const [isDragging, setIsDragging] = React.useState(false);
+  const [showDeviceDialog, setShowDeviceDialog] = React.useState(false);
 
   const deviceOpts = spotify?.devices?.map((d) => ({
     value: d.id,
@@ -32,6 +35,8 @@ export const PlayBar: React.FC = () => {
   const repeatState = spotify?.playbackState?.repeat_state ?? "off";
   const progressMs = spotify?.playbackState?.progress_ms ?? 0;
   const durationMs = spotify?.playbackState?.item?.duration_ms ?? 0;
+  const hasActiveDevice = spotify?.hasActiveDevice ?? false;
+  const needsDeviceSelection = spotify?.needsDeviceSelection ?? false;
 
   // Sync volume with device
   React.useEffect(() => {
@@ -81,25 +86,65 @@ export const PlayBar: React.FC = () => {
     return `${minutes}:${seconds.toString().padStart(2, "0")}`;
   };
 
+  const handlePlayClick = () => {
+    // If no active device, show device selection dialog
+    if (!hasActiveDevice) {
+      setShowDeviceDialog(true);
+      return;
+    }
+    // Otherwise, play the track
+    spotify?.play(trackUri ?? "");
+  };
+
+  const handleDeviceSelect = (deviceId: string) => {
+    spotify?.setActiveDevice(deviceId);
+  };
+
   return (
-    <div className="fixed bottom-0 left-0 right-0 bg-primary p-4 text-white">
-      <div className="flex flex-col space-y-2">
-        {/* Progress bar */}
-        <div className="flex items-center space-x-2">
-          <span className="text-xs">{formatTime(progressMs)}</span>
-          <input
-            type="range"
-            min="0"
-            max={durationMs}
-            value={progressMs}
-            onChange={handleSeek}
-            className="flex-1"
-            style={{
-              background: `linear-gradient(to right, #1db954 0%, #1db954 ${(progressMs / durationMs) * 100}%, #4a4a4a ${(progressMs / durationMs) * 100}%, #4a4a4a 100%)`,
-            }}
-          />
-          <span className="text-xs">{formatTime(durationMs)}</span>
-        </div>
+    <>
+      <DeviceSelectionDialog
+        open={showDeviceDialog}
+        onOpenChange={setShowDeviceDialog}
+        devices={spotify?.devices ?? []}
+        onSelectDevice={handleDeviceSelect}
+        isLoading={spotify?.setActiveIsLoading}
+      />
+      <div className="fixed bottom-0 left-0 right-0 bg-primary p-4 text-white">
+        <div className="flex flex-col space-y-2">
+          {/* Device warning banner */}
+          {needsDeviceSelection && (
+            <div className="flex items-center space-x-2 rounded-md bg-yellow-500/20 px-3 py-2 text-sm">
+              <AlertCircleIcon className="h-4 w-4 text-yellow-500" />
+              <span className="flex-1 text-yellow-200">
+                No active device selected. Click the device icon to select one.
+              </span>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={() => setShowDeviceDialog(true)}
+                className="h-6 text-xs text-yellow-200 hover:text-yellow-100"
+              >
+                Select Device
+              </Button>
+            </div>
+          )}
+
+          {/* Progress bar */}
+          <div className="flex items-center space-x-2">
+            <span className="text-xs">{formatTime(progressMs)}</span>
+            <input
+              type="range"
+              min="0"
+              max={durationMs}
+              value={progressMs}
+              onChange={handleSeek}
+              className="flex-1"
+              style={{
+                background: `linear-gradient(to right, #1db954 0%, #1db954 ${(progressMs / durationMs) * 100}%, #4a4a4a ${(progressMs / durationMs) * 100}%, #4a4a4a 100%)`,
+              }}
+            />
+            <span className="text-xs">{formatTime(durationMs)}</span>
+          </div>
 
         <div className="flex items-center justify-between">
           {/* Track info */}
@@ -147,9 +192,11 @@ export const PlayBar: React.FC = () => {
             ) : (
               <Button
                 variant="ghost"
-                onClick={() => spotify?.play(trackUri ?? "")}
-                className="h-10 w-10 rounded-full px-1 py-1 text-white"
-                title="Play"
+                onClick={handlePlayClick}
+                className={`h-10 w-10 rounded-full px-1 py-1 ${!hasActiveDevice ? "text-yellow-500 hover:text-yellow-400" : "text-white"}`}
+                title={
+                  !hasActiveDevice ? "Select a device to play" : "Play"
+                }
               >
                 <PlayIcon className="h-5 w-5" />
               </Button>
@@ -198,14 +245,25 @@ export const PlayBar: React.FC = () => {
               <span className="text-xs">{volume}%</span>
             </div>
 
-            <DropdownFilter
-              options={deviceOpts ?? []}
-              value={active}
-              setValue={handleDropdownSelect}
-            />
+            <Button
+              variant={needsDeviceSelection ? "destructive" : "secondary"}
+              size="sm"
+              className="h-8 border-dashed"
+              onClick={() => setShowDeviceDialog(true)}
+              title={
+                needsDeviceSelection
+                  ? "No device selected - Click to select"
+                  : `Connected to ${active}`
+              }
+            >
+              <span className="ml-2 flex flex-row font-mono text-xs">
+                {active}
+              </span>
+            </Button>
           </div>
         </div>
       </div>
-    </div>
+      </div>
+    </>
   );
 };

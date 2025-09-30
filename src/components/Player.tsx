@@ -42,6 +42,9 @@ interface SpotifyContextPayload {
   toggleShuffle: (state: boolean) => void;
   setRepeat: (state: "track" | "context" | "off") => void;
   addToQueue: (uri: string) => void;
+  // Device selection helpers
+  hasActiveDevice: boolean;
+  needsDeviceSelection: boolean;
 }
 
 const SpotifyContext = React.createContext<SpotifyContextPayload | undefined>(
@@ -110,12 +113,20 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
     (d: PlaybackDevice) => d.is_active,
   );
 
+  const hasActiveDevice = !!activeDevice;
+  const needsDeviceSelection = !hasActiveDevice && (devices?.length ?? 0) > 0;
+
   const play = (trackUrl: string) => {
+    // Only play if we have an active device
+    if (!activeDevice) {
+      console.warn("No active device - cannot play track");
+      return;
+    }
     console.log("play");
     playTrack.mutate({
       accessToken: token ?? "",
       trackUrl,
-      deviceId: activeDevice?.id ?? "",
+      deviceId: activeDevice.id,
     });
   };
 
@@ -264,6 +275,8 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
         toggleShuffle: toggleShuffleControl,
         setRepeat: setRepeatControl,
         addToQueue: addToQueueControl,
+        hasActiveDevice,
+        needsDeviceSelection,
       }}
     >
       {children}
