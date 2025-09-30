@@ -1,5 +1,5 @@
 import React, { useContext } from "react";
-import { PlaybackState } from "~/types/playbackState";
+import type { PlaybackState } from "~/types/playbackState";
 import { api } from "~/utils/api";
 
 interface Props {
@@ -34,6 +34,17 @@ interface SpotifyContextPayload {
   playFromQueue: (index: number) => void;
   next: () => void;
   prev: () => void;
+  // Native Spotify controls
+  skipNext: () => void;
+  skipPrevious: () => void;
+  seek: (positionMs: number) => void;
+  setVolume: (volumePercent: number) => void;
+  toggleShuffle: (state: boolean) => void;
+  setRepeat: (state: "track" | "context" | "off") => void;
+  addToQueue: (uri: string) => void;
+  // Device selection helpers
+  hasActiveDevice: boolean;
+  needsDeviceSelection: boolean;
 }
 
 const SpotifyContext = React.createContext<SpotifyContextPayload | undefined>(
@@ -41,8 +52,6 @@ const SpotifyContext = React.createContext<SpotifyContextPayload | undefined>(
 );
 
 export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
-  const [playerState, setPlayerState] = React.useState<string | undefined>();
-  const [currentTrack, setCurrentTrack] = React.useState<string | undefined>();
   const [queueUris, setQueueUris] = React.useState<string[]>([]);
   const [queueIndex, setQueueIndex] = React.useState<number | null>(null);
   const lastAdvancedFromTrackUri = React.useRef<string | null>(null);
@@ -76,6 +85,23 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
   const pauseTrack = api.player.pauseTrack.useMutation({
     onSuccess: () => refetchPlayback(),
   });
+  const skipNextMutation = api.player.skipNext.useMutation({
+    onSuccess: () => refetchPlayback(),
+  });
+  const skipPreviousMutation = api.player.skipPrevious.useMutation({
+    onSuccess: () => refetchPlayback(),
+  });
+  const seekMutation = api.player.seek.useMutation({
+    onSuccess: () => refetchPlayback(),
+  });
+  const setVolumeMutation = api.player.setVolume.useMutation();
+  const toggleShuffleMutation = api.player.toggleShuffle.useMutation({
+    onSuccess: () => refetchPlayback(),
+  });
+  const setRepeatMutation = api.player.setRepeat.useMutation({
+    onSuccess: () => refetchPlayback(),
+  });
+  const addToQueueMutation = api.player.addToQueue.useMutation();
 
   const pause = () => {
     pauseTrack.mutate({ accessToken: token ?? "" });
@@ -85,12 +111,20 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
     (d: PlaybackDevice) => d.is_active,
   );
 
+  const hasActiveDevice = !!activeDevice;
+  const needsDeviceSelection = !hasActiveDevice && (devices?.length ?? 0) > 0;
+
   const play = (trackUrl: string) => {
+    // Only play if we have an active device
+    if (!activeDevice) {
+      console.warn("No active device - cannot play track");
+      return;
+    }
     console.log("play");
     playTrack.mutate({
       accessToken: token ?? "",
       trackUrl,
-      deviceId: activeDevice?.id ?? "",
+      deviceId: activeDevice.id,
     });
   };
 
@@ -129,6 +163,61 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
     }
   };
 
+  // Native Spotify controls
+  const skipNext = () => {
+    skipNextMutation.mutate({
+      accessToken: token ?? "",
+      deviceId: activeDevice?.id,
+    });
+  };
+
+  const skipPrevious = () => {
+    skipPreviousMutation.mutate({
+      accessToken: token ?? "",
+      deviceId: activeDevice?.id,
+    });
+  };
+
+  const seek = (positionMs: number) => {
+    seekMutation.mutate({
+      accessToken: token ?? "",
+      positionMs,
+      deviceId: activeDevice?.id,
+    });
+  };
+
+  const setVolume = (volumePercent: number) => {
+    setVolumeMutation.mutate({
+      accessToken: token ?? "",
+      volumePercent,
+      deviceId: activeDevice?.id,
+    });
+  };
+
+  const toggleShuffleControl = (state: boolean) => {
+    toggleShuffleMutation.mutate({
+      accessToken: token ?? "",
+      state,
+      deviceId: activeDevice?.id,
+    });
+  };
+
+  const setRepeatControl = (state: "track" | "context" | "off") => {
+    setRepeatMutation.mutate({
+      accessToken: token ?? "",
+      state,
+      deviceId: activeDevice?.id,
+    });
+  };
+
+  const addToQueueControl = (uri: string) => {
+    addToQueueMutation.mutate({
+      accessToken: token ?? "",
+      uri,
+      deviceId: activeDevice?.id,
+    });
+  };
+
   React.useEffect(() => {
     const currentUri = playback?.item?.uri;
     const durationMs = playback?.item?.duration_ms ?? 0;
@@ -155,14 +244,14 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
       // Allow future auto-advance for this track
       // Intentionally no-op besides the check; the guard will be compared again at end-of-track
     }
-  }, [playback?.item?.uri, playback?.progress_ms, playback?.is_playing, queueIndex, queueUris]);
+  }, [playback?.item?.uri, playback?.item?.duration_ms, playback?.progress_ms, playback?.is_playing, queueIndex, queueUris, next]);
 
   return (
     <SpotifyContext.Provider
       value={{
         accessToken: token,
-        playerState,
-        currentTrack,
+        playerState: undefined,
+        currentTrack: undefined,
         devices,
         activeDevice,
         setActiveDevice,
@@ -177,6 +266,15 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
         playFromQueue,
         next,
         prev,
+        skipNext,
+        skipPrevious,
+        seek,
+        setVolume,
+        toggleShuffle: toggleShuffleControl,
+        setRepeat: setRepeatControl,
+        addToQueue: addToQueueControl,
+        hasActiveDevice,
+        needsDeviceSelection,
       }}
     >
       {children}
