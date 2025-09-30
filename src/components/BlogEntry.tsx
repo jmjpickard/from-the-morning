@@ -1,9 +1,4 @@
-import {
-  Card,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import { Card, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useSpotify } from "./Player";
 import { Button } from "@/components/ui/button";
 import { api } from "~/utils/api";
@@ -13,22 +8,19 @@ import { PauseIcon } from "@radix-ui/react-icons";
 import Image from "next/image";
 
 interface BlogProps {
-  title: string;
   content: string;
-  trackUri: string;
+  trackId: string;
+  index?: number;
 }
 
 const getArtistNames = (track?: Track) => {
   return track?.artists?.map((artist) => artist.name).join(", ");
 };
 
-export const BlogEntry: React.FC<BlogProps> = ({
-  content,
-  trackUri,
-}: BlogProps) => {
+export const BlogEntry: React.FC<BlogProps> = ({ content, trackId, index }: BlogProps) => {
   const spotify = useSpotify();
   const track = api.player.getTrack.useQuery({
-    trackId: trackUri,
+    trackId,
     accessToken: spotify?.accessToken ?? "",
   });
   const trackName = track.data?.name;
@@ -38,8 +30,7 @@ export const BlogEntry: React.FC<BlogProps> = ({
     : "";
 
   const isPlaying = spotify?.playbackState?.is_playing;
-  const isPlayingTrack =
-    spotify?.playbackState?.item?.uri === `spotify:track:${trackUri}`;
+  const isPlayingTrack = spotify?.playbackState?.item?.uri === `spotify:track:${trackId}`;
 
   return (
     <Card className="ml-4 mr-4 w-auto sm:w-2/3">
@@ -74,7 +65,13 @@ export const BlogEntry: React.FC<BlogProps> = ({
         ) : (
           <Button
             variant="ghost"
-            onClick={() => spotify?.play(`spotify:track:${trackUri}`)}
+            onClick={() => {
+              if (index !== undefined) {
+                spotify?.playFromQueue(index);
+              } else {
+                spotify?.play(`spotify:track:${trackId}`);
+              }
+            }}
             className="w-10 rounded-full px-1 py-1 text-primary"
           >
             <PlayIcon className="" />
