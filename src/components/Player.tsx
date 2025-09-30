@@ -1,6 +1,7 @@
-import React, { useContext } from "react";
+import React, { useContext, useEffect } from "react";
 import type { PlaybackState } from "~/types/playbackState";
 import { api } from "~/utils/api";
+import { useSpotifyWebPlayback } from "~/hooks/useSpotifyWebPlayback";
 
 interface Props {
   children?: React.ReactNode;
@@ -57,6 +58,23 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
   const lastAdvancedFromTrackUri = React.useRef<string | null>(null);
 
   const { data: token } = api.user.getAccessToken.useQuery();
+
+  // Initialize Web Playback SDK for browser playback
+  const { deviceId: webPlaybackDeviceId, isReady: webPlayerReady } =
+    useSpotifyWebPlayback({
+      accessToken: token,
+      onPlayerReady: (deviceId) => {
+        console.log("Web Playback SDK ready with device ID:", deviceId);
+        // Refetch devices to include the new web player
+        refetch();
+      },
+      onPlayerStateChanged: (state) => {
+        if (state) {
+          // Refetch playback state when web player state changes
+          refetchPlayback();
+        }
+      },
+    });
 
   const { data: devices, refetch } = api.player.getDevices.useQuery(
     { accessToken: token ?? "" },
@@ -217,6 +235,17 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
       deviceId: activeDevice?.id,
     });
   };
+
+  // Auto-select web player as active device when ready and no other device is active
+  useEffect(() => {
+    if (webPlayerReady && webPlaybackDeviceId && !activeDevice && devices) {
+      console.log(
+        "Auto-selecting web player as active device:",
+        webPlaybackDeviceId,
+      );
+      setActiveDevice(webPlaybackDeviceId);
+    }
+  }, [webPlayerReady, webPlaybackDeviceId, activeDevice, devices]);
 
   React.useEffect(() => {
     const currentUri = playback?.item?.uri;
