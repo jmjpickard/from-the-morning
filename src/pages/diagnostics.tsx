@@ -268,7 +268,7 @@ export default function DiagnosticsPage() {
     }
 
     // Check 6: Web Playback SDK
-    if (typeof window !== "undefined" && window.Spotify) {
+    if (typeof window !== "undefined" && (window as typeof window & { Spotify?: unknown }).Spotify) {
       addCheck({
         name: "Web Playback SDK",
         status: "success",
