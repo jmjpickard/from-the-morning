@@ -93,6 +93,33 @@ export default function DiagnosticsPage() {
     }
   };
 
+  const forceReauth = async () => {
+    if (!confirm("⚠️ This will delete your account record and require you to sign in again. Continue?")) {
+      return;
+    }
+
+    setSpotifyLogs(["Forcing re-authentication..."]);
+    try {
+      const response = await fetch("/api/debug/force-reauth", {
+        method: "POST",
+      });
+      const data = await response.json() as SpotifyAPIResponse;
+      if (data.logs) {
+        setSpotifyLogs(data.logs);
+        if (response.ok) {
+          setTimeout(() => {
+            alert("✅ Account deleted. You will now be signed out. Please sign in again to grant new scopes.");
+            window.location.href = "/api/auth/signout";
+          }, 2000);
+        }
+      } else {
+        setSpotifyLogs([`Error: ${data.error ?? "Unknown error"}`]);
+      }
+    } catch (error) {
+      setSpotifyLogs([`Request failed: ${error instanceof Error ? error.message : "Unknown error"}`]);
+    }
+  };
+
   const runDiagnostics = useCallback(async () => {
     setIsRunning(true);
     setChecks([]);
@@ -140,7 +167,7 @@ export default function DiagnosticsPage() {
           name: "OAuth Scopes",
           status: "error",
           message: `Missing ${missingScopes.length} required scope(s)`,
-          details: `Missing: ${missingScopes.join(", ")}\n\nYou need to sign out and sign in again to grant new scopes.`
+          details: `Missing: ${missingScopes.join(", ")}\n\n🔧 SOLUTION: Use the "Force Re-Authentication" button below to delete your account record and sign in again with the new scopes.`
         });
       }
     } else {
@@ -485,6 +512,15 @@ export default function DiagnosticsPage() {
         <div className="mt-8 bg-white rounded-lg shadow-lg p-6">
           <h2 className="text-xl font-bold mb-4">Quick Actions</h2>
           <div className="space-y-2">
+            {/* Force Re-Auth - Only show if missing scopes */}
+            {checks.some((check: DiagnosticCheck) => check.name === "OAuth Scopes" && check.status === "error") && (
+              <button
+                onClick={() => void forceReauth()}
+                className="block w-full text-left px-4 py-2 bg-red-600 text-white hover:bg-red-700 rounded font-semibold"
+              >
+                🔄 Force Re-Authentication (Fix Missing Scopes)
+              </button>
+            )}
             <button
               onClick={() => {
                 window.open("https://www.spotify.com/account/apps/", "_blank");
@@ -523,6 +559,36 @@ export default function DiagnosticsPage() {
         <div className="mt-8 bg-yellow-50 border border-yellow-200 rounded-lg p-6">
           <h2 className="text-xl font-bold mb-4">Common Issues & Solutions</h2>
           <div className="space-y-4 text-sm">
+            <div className="p-3 bg-red-50 border border-red-300 rounded">
+              <div className="font-semibold text-red-800">🚨 Missing OAuth Scopes (YOUR CURRENT ISSUE)</div>
+              <div className="text-gray-700 mt-1">
+                <strong>Problem:</strong> Your database has old scopes without streaming/playback permissions.
+                <br />
+                <strong>Solution:</strong> Click the red &quot;Force Re-Authentication&quot; button above, which will:
+                <br />
+                1. Delete your account record
+                <br />
+                2. Sign you out
+                <br />
+                3. Prompt you to sign in again with ALL required scopes
+                <br />
+                <strong>Why this happens:</strong> When developers add new OAuth scopes, existing users keep their old permissions until they re-authenticate.
+              </div>
+            </div>
+            <div>
+              <div className="font-semibold">❌ No Devices Found</div>
+              <div className="text-gray-700">
+                • <strong>Primary Cause:</strong> Missing &quot;streaming&quot; scope (see above)
+                <br />
+                • Open Spotify app on your phone or computer
+                <br />
+                • Play any song to activate a device
+                <br />
+                • Wait 5-10 seconds for Web Player to initialize
+                <br />
+                • If you have Spotify Free, some devices may not be controllable
+              </div>
+            </div>
             <div>
               <div className="font-semibold">❌ No Access Token</div>
               <div className="text-gray-700">
@@ -534,21 +600,11 @@ export default function DiagnosticsPage() {
               </div>
             </div>
             <div>
-              <div className="font-semibold">❌ No Devices Found</div>
-              <div className="text-gray-700">
-                • Open Spotify app on your phone or computer
-                <br />
-                • Play any song to activate a device
-                <br />
-                • Wait 5-10 seconds for Web Player to initialize
-              </div>
-            </div>
-            <div>
               <div className="font-semibold">❌ Playback Not Working</div>
               <div className="text-gray-700">
                 • Ensure an active device is selected (green indicator)
                 <br />
-                • Check if you have Spotify Premium (required for playback control)
+                • <strong>REQUIRED:</strong> Spotify Premium subscription (free accounts cannot control playback)
                 <br />
                 • Verify streaming scope is granted
               </div>
