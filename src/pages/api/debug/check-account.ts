@@ -63,7 +63,7 @@ export default async function handler(
           ? `${account.refresh_token!.substring(0, 10)}...` 
           : null,
       },
-      scopes: account.scope?.split(" ") || [],
+      scopes: account.scope?.split(" ") ?? [],
       requiredScopes: [
         "user-read-email",
         "user-modify-playback-state",
@@ -72,7 +72,7 @@ export default async function handler(
         "user-read-recently-played",
         "streaming",
       ],
-      scopesMatch: account.scope?.includes("streaming") || false,
+      scopesMatch: account.scope?.includes("streaming") ?? false,
     });
   } catch (error) {
     console.error("Error checking account:", error);

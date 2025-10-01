@@ -4,6 +4,34 @@ import { authOptions } from "~/server/auth";
 import { db } from "~/server/db";
 import { getAccessToken } from "~/server/api/userService";
 
+interface SpotifyUser {
+  display_name?: string;
+  id: string;
+  product?: string;
+  country?: string;
+}
+
+interface SpotifyDevice {
+  name: string;
+  type: string;
+  is_active: boolean;
+}
+
+interface SpotifyDevicesResponse {
+  devices?: SpotifyDevice[];
+}
+
+interface SpotifyPlaybackResponse {
+  is_playing: boolean;
+  item?: {
+    name?: string;
+    artists?: Array<{ name: string }>;
+  };
+  device?: {
+    name?: string;
+  };
+}
+
 export default async function handler(
   req: NextApiRequest,
   res: NextApiResponse
@@ -42,7 +70,7 @@ export default async function handler(
     logs.push(`  Has refresh_token: ${!!account.refresh_token}`);
     logs.push(`  Has access_token: ${!!account.access_token}`);
     logs.push(`  Expires at: ${account.expires_at ? new Date(account.expires_at * 1000).toISOString() : "unknown"}`);
-    logs.push(`  Scopes: ${account.scope || "none"}`);
+    logs.push(`  Scopes: ${account.scope ?? "none"}`);
 
     if (!account.refresh_token) {
       logs.push("❌ No refresh token found");
@@ -79,10 +107,10 @@ export default async function handler(
       logs.push(`Status: ${userResponse.status} ${userResponse.statusText}`);
       
       if (userResponse.ok) {
-        const userData = await userResponse.json();
-        logs.push(`✓ Successfully authenticated as: ${userData.display_name || userData.id}`);
-        logs.push(`  Product: ${userData.product || "unknown"}`);
-        logs.push(`  Country: ${userData.country || "unknown"}`);
+        const userData = await userResponse.json() as SpotifyUser;
+        logs.push(`✓ Successfully authenticated as: ${userData.display_name ?? userData.id}`);
+        logs.push(`  Product: ${userData.product ?? "unknown"}`);
+        logs.push(`  Country: ${userData.country ?? "unknown"}`);
       } else {
         const errorData = await userResponse.text();
         logs.push(`❌ API Error: ${errorData}`);
@@ -103,12 +131,11 @@ export default async function handler(
       logs.push(`Status: ${devicesResponse.status} ${devicesResponse.statusText}`);
       
       if (devicesResponse.ok) {
-        const devicesData = await devicesResponse.json();
+        const devicesData = await devicesResponse.json() as SpotifyDevicesResponse;
         logs.push(`✓ Devices fetched successfully`);
-        logs.push(`  Device count: ${devicesData.devices?.length || 0}`);
+        logs.push(`  Device count: ${devicesData.devices?.length ?? 0}`);
         if (devicesData.devices && devicesData.devices.length > 0) {
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          devicesData.devices.forEach((device: any, index: number) => {
+          devicesData.devices.forEach((device: SpotifyDevice, index: number) => {
             logs.push(`  [${index + 1}] ${device.name} (${device.type}) - Active: ${device.is_active}`);
           });
         } else {
@@ -136,12 +163,12 @@ export default async function handler(
       if (playbackResponse.status === 204) {
         logs.push(`ℹ️ No playback currently active (204 No Content)`);
       } else if (playbackResponse.ok) {
-        const playbackData = await playbackResponse.json();
+        const playbackData = await playbackResponse.json() as SpotifyPlaybackResponse;
         logs.push(`✓ Playback state fetched successfully`);
         logs.push(`  Playing: ${playbackData.is_playing}`);
-        logs.push(`  Track: ${playbackData.item?.name || "N/A"}`);
-        logs.push(`  Artist: ${playbackData.item?.artists?.[0]?.name || "N/A"}`);
-        logs.push(`  Device: ${playbackData.device?.name || "N/A"}`);
+        logs.push(`  Track: ${playbackData.item?.name ?? "N/A"}`);
+        logs.push(`  Artist: ${playbackData.item?.artists?.[0]?.name ?? "N/A"}`);
+        logs.push(`  Device: ${playbackData.device?.name ?? "N/A"}`);
       } else {
         const errorData = await playbackResponse.text();
         logs.push(`❌ API Error: ${errorData}`);
