@@ -28,10 +28,17 @@ export const BlogEntry: React.FC<BlogProps> = ({ content, trackId, index }: Blog
   const spotify = useSpotify();
   const [showDeviceDialog, setShowDeviceDialog] = React.useState(false);
 
-  const track = api.player.getTrack.useQuery({
-    trackId,
-    accessToken: spotify?.accessToken ?? "",
-  });
+  const hasAccessToken = Boolean(spotify?.accessToken);
+  const track = api.player.getTrack.useQuery(
+    {
+      trackId,
+      accessToken: spotify?.accessToken ?? "",
+    },
+    {
+      enabled: hasAccessToken,
+      staleTime: 1000 * 60 * 5,
+    },
+  );
   const trackName = track.data?.name;
   const artists = getArtistNames(track.data);
   const albumImage = track.data?.album?.images
@@ -84,8 +91,22 @@ export const BlogEntry: React.FC<BlogProps> = ({ content, trackId, index }: Blog
 
             <div className="mt-5 flex flex-col items-start gap-3">
               <div>
-                <CardTitle>{trackName ?? "Unknown track"}</CardTitle>
-                <CardDescription>{artists ?? "Unknown artist"}</CardDescription>
+                <CardTitle>
+                  {track.isLoading
+                    ? "Loading track details..."
+                    : trackName ??
+                      (hasAccessToken
+                        ? "Unknown track"
+                        : "Sign in to load track details")}
+                </CardTitle>
+                <CardDescription>
+                  {track.isLoading
+                    ? ""
+                    : artists ??
+                      (hasAccessToken
+                        ? "Unknown artist"
+                        : "We need Spotify access to show artist info")}
+                </CardDescription>
               </div>
               <div>
                 <p>{content}</p>

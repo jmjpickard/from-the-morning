@@ -60,21 +60,24 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
   const { data: token } = api.user.getAccessToken.useQuery();
 
   // Initialize Web Playback SDK for browser playback
-  const { deviceId: webPlaybackDeviceId, isReady: webPlayerReady } =
-    useSpotifyWebPlayback({
-      accessToken: token,
-      onPlayerReady: (deviceId) => {
-        console.log("Web Playback SDK ready with device ID:", deviceId);
-        // Refetch devices to include the new web player
-        void refetch();
-      },
-      onPlayerStateChanged: (state) => {
-        if (state) {
-          // Refetch playback state when web player state changes
-          void refetchPlayback();
-        }
-      },
-    });
+  const {
+    deviceId: webPlaybackDeviceId,
+    isReady: webPlayerReady,
+    activatePlayerElement,
+  } = useSpotifyWebPlayback({
+    accessToken: token,
+    onPlayerReady: (deviceId) => {
+      console.log("Web Playback SDK ready with device ID:", deviceId);
+      // Refetch devices to include the new web player
+      void refetch();
+    },
+    onPlayerStateChanged: (state) => {
+      if (state) {
+        // Refetch playback state when web player state changes
+        void refetchPlayback();
+      }
+    },
+  });
 
   const { data: devices, refetch } = api.player.getDevices.useQuery(
     { accessToken: token ?? "" },
@@ -148,38 +151,62 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
   const hasActiveDevice = !!activeDevice;
   const needsDeviceSelection = !hasActiveDevice && (devices?.length ?? 0) > 0;
 
-  const play = (trackUrl: string) => {
-    // Only play if we have an active device
-    if (!activeDevice) {
-      console.warn("No active device - cannot play track");
-      return;
-    }
-    console.log("play");
-    playTrack.mutate({
-      accessToken: token ?? "",
-      trackUrl,
-      deviceId: activeDevice.id,
-    });
-  };
+  const play = useCallback(
+    (trackUrl: string) => {
+      // Only play if we have an active device
+      if (!activeDevice) {
+        console.warn("No active device - cannot play track");
+        return;
+      }
 
-  const setActiveDevice = (deviceId: string) => {
-    transferPlayback.mutate({ accessToken: token ?? "", deviceId });
-  };
+      if (
+        webPlayerReady &&
+        webPlaybackDeviceId &&
+        activeDevice.id === webPlaybackDeviceId
+      ) {
+        void activatePlayerElement();
+      }
+      console.log("play");
+      playTrack.mutate({
+        accessToken: token ?? "",
+        trackUrl,
+        deviceId: activeDevice.id,
+      });
+    },
+    [
+      activatePlayerElement,
+      activeDevice,
+      playTrack,
+      token,
+      webPlaybackDeviceId,
+      webPlayerReady,
+    ],
+  );
+
+  const setActiveDevice = useCallback(
+    (deviceId: string) => {
+      transferPlayback.mutate({ accessToken: token ?? "", deviceId });
+    },
+    [token, transferPlayback],
+  );
 
   const setQueue = (uris: string[], startIndex = 0) => {
     setQueueUris(uris);
     setQueueIndex(startIndex);
   };
 
-  const playFromQueue = (index: number) => {
-    if (!queueUris.length) return;
-    const clampedIndex = Math.max(0, Math.min(index, queueUris.length - 1));
-    setQueueIndex(clampedIndex);
-    const targetUri = queueUris[clampedIndex];
-    if (targetUri) {
-      play(targetUri);
-    }
-  };
+  const playFromQueue = useCallback(
+    (index: number) => {
+      if (!queueUris.length) return;
+      const clampedIndex = Math.max(0, Math.min(index, queueUris.length - 1));
+      setQueueIndex(clampedIndex);
+      const targetUri = queueUris[clampedIndex];
+      if (targetUri) {
+        void play(targetUri);
+      }
+    },
+    [play, queueUris],
+  );
 
   const next = useCallback(() => {
     if (queueIndex === null) return;
