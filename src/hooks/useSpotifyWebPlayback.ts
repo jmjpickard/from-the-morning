@@ -1,4 +1,4 @@
-import { useEffect, useState, useRef } from "react";
+import { useEffect, useState, useRef, useCallback } from "react";
 
 interface UseSpotifyWebPlaybackProps {
   accessToken: string | undefined;
@@ -11,6 +11,7 @@ interface UseSpotifyWebPlaybackReturn {
   deviceId: string | null;
   isReady: boolean;
   error: string | null;
+  activatePlayerElement: () => Promise<void>;
 }
 
 declare global {
@@ -156,10 +157,31 @@ export const useSpotifyWebPlayback = ({
     };
   }, [sdkLoaded, accessToken, onPlayerReady, onPlayerStateChanged]);
 
+  const activatePlayerElement = useCallback(async () => {
+    const currentPlayer = playerRef.current;
+
+    if (!currentPlayer) return;
+
+    const maybeActivate =
+      typeof currentPlayer.activateElement === "function"
+        ? currentPlayer.activateElement
+        : null;
+
+    if (!maybeActivate) return;
+
+    try {
+      await maybeActivate.call(currentPlayer);
+      console.log("Spotify Web Playback element activated");
+    } catch (err) {
+      console.error("Failed to activate Spotify Web Playback element", err);
+    }
+  }, []);
+
   return {
     player,
     deviceId,
     isReady,
     error,
+    activatePlayerElement,
   };
 };

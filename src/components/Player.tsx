@@ -60,21 +60,24 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
   const { data: token } = api.user.getAccessToken.useQuery();
 
   // Initialize Web Playback SDK for browser playback
-  const { deviceId: webPlaybackDeviceId, isReady: webPlayerReady } =
-    useSpotifyWebPlayback({
-      accessToken: token,
-      onPlayerReady: (deviceId) => {
-        console.log("Web Playback SDK ready with device ID:", deviceId);
-        // Refetch devices to include the new web player
-        void refetch();
-      },
-      onPlayerStateChanged: (state) => {
-        if (state) {
-          // Refetch playback state when web player state changes
-          void refetchPlayback();
-        }
-      },
-    });
+  const {
+    deviceId: webPlaybackDeviceId,
+    isReady: webPlayerReady,
+    activatePlayerElement,
+  } = useSpotifyWebPlayback({
+    accessToken: token,
+    onPlayerReady: (deviceId) => {
+      console.log("Web Playback SDK ready with device ID:", deviceId);
+      // Refetch devices to include the new web player
+      void refetch();
+    },
+    onPlayerStateChanged: (state) => {
+      if (state) {
+        // Refetch playback state when web player state changes
+        void refetchPlayback();
+      }
+    },
+  });
 
   const { data: devices, refetch } = api.player.getDevices.useQuery(
     { accessToken: token ?? "" },
@@ -154,6 +157,14 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
       console.warn("No active device - cannot play track");
       return;
     }
+
+    if (
+      webPlayerReady &&
+      webPlaybackDeviceId &&
+      activeDevice.id === webPlaybackDeviceId
+    ) {
+      void activatePlayerElement();
+    }
     console.log("play");
     playTrack.mutate({
       accessToken: token ?? "",
@@ -177,7 +188,7 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
     setQueueIndex(clampedIndex);
     const targetUri = queueUris[clampedIndex];
     if (targetUri) {
-      play(targetUri);
+      void play(targetUri);
     }
   };
 

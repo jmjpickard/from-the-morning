@@ -62,10 +62,21 @@ export const playTrackRequest = async (
   const fetch = fetchSpotify(accessToken);
 
   try {
-    await fetch.put("/me/player/play", {
-      device_id: deviceId,
-      uris: [trackUri],
-    });
+    const config = deviceId
+      ? {
+          params: {
+            device_id: deviceId,
+          },
+        }
+      : undefined;
+
+    await fetch.put(
+      "/me/player/play",
+      {
+        uris: [trackUri],
+      },
+      config,
+    );
     return "success";
   } catch (error) {
     console.error(error);
