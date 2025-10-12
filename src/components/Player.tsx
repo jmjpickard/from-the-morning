@@ -151,46 +151,62 @@ export const SpotifyPlayer: React.FC<Props> = ({ children }) => {
   const hasActiveDevice = !!activeDevice;
   const needsDeviceSelection = !hasActiveDevice && (devices?.length ?? 0) > 0;
 
-  const play = (trackUrl: string) => {
-    // Only play if we have an active device
-    if (!activeDevice) {
-      console.warn("No active device - cannot play track");
-      return;
-    }
+  const play = useCallback(
+    (trackUrl: string) => {
+      // Only play if we have an active device
+      if (!activeDevice) {
+        console.warn("No active device - cannot play track");
+        return;
+      }
 
-    if (
-      webPlayerReady &&
-      webPlaybackDeviceId &&
-      activeDevice.id === webPlaybackDeviceId
-    ) {
-      void activatePlayerElement();
-    }
-    console.log("play");
-    playTrack.mutate({
-      accessToken: token ?? "",
-      trackUrl,
-      deviceId: activeDevice.id,
-    });
-  };
+      if (
+        webPlayerReady &&
+        webPlaybackDeviceId &&
+        activeDevice.id === webPlaybackDeviceId
+      ) {
+        void activatePlayerElement();
+      }
+      console.log("play");
+      playTrack.mutate({
+        accessToken: token ?? "",
+        trackUrl,
+        deviceId: activeDevice.id,
+      });
+    },
+    [
+      activatePlayerElement,
+      activeDevice,
+      playTrack,
+      token,
+      webPlaybackDeviceId,
+      webPlayerReady,
+    ],
+  );
 
-  const setActiveDevice = (deviceId: string) => {
-    transferPlayback.mutate({ accessToken: token ?? "", deviceId });
-  };
+  const setActiveDevice = useCallback(
+    (deviceId: string) => {
+      transferPlayback.mutate({ accessToken: token ?? "", deviceId });
+    },
+    [token, transferPlayback],
+  );
 
   const setQueue = (uris: string[], startIndex = 0) => {
     setQueueUris(uris);
     setQueueIndex(startIndex);
   };
 
-  const playFromQueue = (index: number) => {
-    if (!queueUris.length) return;
-    const clampedIndex = Math.max(0, Math.min(index, queueUris.length - 1));
-    setQueueIndex(clampedIndex);
-    const targetUri = queueUris[clampedIndex];
-    if (targetUri) {
-      void play(targetUri);
-    }
-  };
+  const playFromQueue = useCallback(
+    (index: number) => {
+      if (!queueUris.length) return;
+      const clampedIndex = Math.max(0, Math.min(index, queueUris.length - 1));
+      setQueueIndex(clampedIndex);
+      const targetUri = queueUris[clampedIndex];
+      if (targetUri) {
+        void play(targetUri);
+      }
+    },
+    [play, queueUris],
+  );
 
   const next = useCallback(() => {
     if (queueIndex === null) return;

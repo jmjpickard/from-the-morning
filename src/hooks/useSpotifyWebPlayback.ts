@@ -164,13 +164,13 @@ export const useSpotifyWebPlayback = ({
 
     const maybeActivate =
       typeof currentPlayer.activateElement === "function"
-        ? currentPlayer.activateElement
+        ? () => currentPlayer.activateElement()
         : null;
 
     if (!maybeActivate) return;
 
     try {
-      await maybeActivate.call(currentPlayer);
+      await maybeActivate();
       console.log("Spotify Web Playback element activated");
     } catch (err) {
       console.error("Failed to activate Spotify Web Playback element", err);
